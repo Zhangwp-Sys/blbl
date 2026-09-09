@@ -1,0 +1,58 @@
+# IDE配置文件
+.idea/
+.vscode/
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+
+# 前端依赖
+node_modules/
+*/node_modules/
+
+# Maven构建目录
+target/
+*/target/
+
+# 前端构建产物
+dist/
+build/
+out/
+
+# 编译产物
+*.class
+*.jar
+*.war
+
+# 环境配置文件（敏感信息）
+.env
+.env.local
+.env.*.local
+application-private.yml
+application-local.yml
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+
+# 依赖锁定文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Vue/Node
+*.local

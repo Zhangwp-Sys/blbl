@@ -1,0 +1,30 @@
+package com.yilena.service.dao;
+
+import com.yilena.service.entity.dto.UserPendingPageQueryDTO;
+import com.yilena.service.entity.po.User;
+import com.yilena.service.entity.vo.UserVO;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Mapper
+public interface UserMapper {
+    User getByUsername(String username);
+
+    void addUser(User user);
+
+    User getUserById(Long id);
+
+    void updateUserById(User user);
+
+    List<UserVO> getUserByIds(List<Long> ids, String username);
+
+    void updateIsRecord(Long userId, Integer isRecord);
+
+    Long getTotalUser();
+
+    List<User> getUserPendingByPage(UserPendingPageQueryDTO userPendingPageQueryDTO);
+
+    Integer getUserReport(LocalDateTime beginDateTime, LocalDateTime endDateTime);
+}
