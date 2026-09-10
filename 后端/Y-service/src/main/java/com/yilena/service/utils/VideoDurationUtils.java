@@ -13,6 +13,9 @@ public class VideoDurationUtils {
      * 获取视频时长
      */
     public static long getVideoDuration(String videoFilePath) {
+        if (videoFilePath == null || videoFilePath.isEmpty()) {
+            throw new RuntimeException("视频路径不能为空");
+        }
         try {
             URL url = new URL(videoFilePath);
             MultimediaObject multimediaObject = new MultimediaObject(url);

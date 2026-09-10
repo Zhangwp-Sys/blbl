@@ -55,6 +55,8 @@ aliyun:
     endpoint: ${yilena.oss.endpoint}
     bucketName: ${yilena.oss.bucketName}
     region: ${yilena.oss.region}
+    accessKeyId: ${yilena.oss.accessKeyId}
+    accessKeySecret: ${yilena.oss.accessKeySecret}
 
 jwt:
   secretKey: ${yilena.jwt.secretKey}

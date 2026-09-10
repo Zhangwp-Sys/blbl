@@ -2,8 +2,8 @@ package com.yilena.service.utils;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.common.auth.CredentialsProvider;
 import com.aliyun.oss.common.auth.CredentialsProviderFactory;
-import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
 import com.yilena.service.config.AliyunOSSProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -34,18 +34,18 @@ public class AliyunOSSOperator {
         // 设置 OSS Endpoint 和 Bucket 名称
         String endpoint = aliyunOSSProperties.getEndpoint();
         String bucketName = aliyunOSSProperties.getBucketName();
-        // 替换为您的 Bucket 区域
         String region = aliyunOSSProperties.getRegion();
+        String accessKeyId = aliyunOSSProperties.getAccessKeyId();
+        String accessKeySecret = aliyunOSSProperties.getAccessKeySecret();
+
         // 创建 OSSClient 实例
-        EnvironmentVariableCredentialsProvider credentialsProvider =
-                CredentialsProviderFactory.newEnvironmentVariableCredentialsProvider();
+        CredentialsProvider credentialsProvider = CredentialsProviderFactory.newDefaultCredentialProvider(accessKeyId, accessKeySecret);
         OSS ossClient = OSSClientBuilder.create()
                 .endpoint(endpoint)
                 .credentialsProvider(credentialsProvider)
                 .region(region)
                 .build();
         try {
-            // 2. 上传文件
             ossClient.putObject(bucketName, objectName, new ByteArrayInputStream(content));
             System.out.println("2. 文件 " + objectName + " 上传成功。");
         } finally {
@@ -53,6 +53,8 @@ public class AliyunOSSOperator {
                 ossClient.shutdown();
             }
         }
-        return endpoint.split("//")[0] + "//" + bucketName + "." + endpoint.split("//")[1] + "/" + objectName;
+        // 构建访问URL，兼容endpoint带或不带协议头的情况
+        String host = endpoint.contains("//") ? endpoint.split("//")[1] : endpoint;
+        return "https://" + bucketName + "." + host + "/" + objectName;
     }
 }

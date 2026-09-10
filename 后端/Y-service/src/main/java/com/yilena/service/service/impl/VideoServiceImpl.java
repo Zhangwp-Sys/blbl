@@ -60,6 +60,13 @@ public class VideoServiceImpl implements VideoService {
         video.setUserId(CurrentHolder.getCurrent());
         video.setId(snowFlake.getID());
 
+        if (video.getVideoUrl() == null || video.getVideoUrl().isEmpty()) {
+            throw new RuntimeException("视频URL不能为空，请先上传视频");
+        }
+        if (video.getCoverUrl() == null || video.getCoverUrl().isEmpty()) {
+            throw new RuntimeException("视频封面URL不能为空，请先上传封面");
+        }
+
         video.setDescription(SensitiveWordFilter.filterSensitiveWords(video.getDescription()));
         video.setTitle(SensitiveWordFilter.filterSensitiveWords(video.getTitle()));
 

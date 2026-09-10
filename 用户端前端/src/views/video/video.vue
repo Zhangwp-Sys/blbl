@@ -1517,7 +1517,8 @@ const getHotSearchData = async () => {
     setInterval(() => {
       const currentIndex = hotSearchData.value.findIndex(item => item.content === currentHotSearchContent.value);
       const nextIndex = (currentIndex + 1) % hotSearchData.value.length;
-      currentHotSearchContent.value = hotSearchData.value[nextIndex].content;
+      const nextItem = hotSearchData.value[nextIndex];
+      if (nextItem) currentHotSearchContent.value = nextItem.content;
     }, 5000);
   }else{
     ElMessage.error('获取热搜失败！')
