@@ -10,6 +10,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 用户数据统计控制器
+ * 
+ * 功能说明：
+ * 1. 提供用户粉丝统计报表
+ * 2. 提供点赞统计报表
+ * 3. 提供收藏统计报表
+ * 4. 提供投币统计报表
+ * 5. 提供评论统计报表
+ * 
+ * 请求路径：/userReport
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

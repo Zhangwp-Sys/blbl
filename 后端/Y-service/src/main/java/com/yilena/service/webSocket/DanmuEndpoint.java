@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -53,8 +54,8 @@ public class DanmuEndpoint {
         // 构造 JSON 消息
         String message = String.format("{\"type\": \"userCount\", \"count\": %d}", currentUsers);
 
-        // 发送给当前连接的客户端
-        session.getBasicRemote().sendText(message);
+        // 发送给当前连接的客户端（异步发送，不阻塞）
+        session.getAsyncRemote().sendText(message);
 
         log.info("视频 {} 新增观众 {}, 当前在线: {}", videoId, userId, currentUsers);
     }
@@ -67,15 +68,19 @@ public class DanmuEndpoint {
         broadcastMessage(danmu.getVideoId(), JSON.toJSONString(danmu));
 
         // 存储到Redis有序集合（按视频时间排序）
+        // member用UUID拼接弹幕JSON，保证每条弹幕唯一，防止内容相同的弹幕互相覆盖
         String danmuKey = "videoDanmu:" + danmu.getVideoId();
-        redisTemplate.opsForZSet().add(danmuKey, message, danmu.getVideoTime());
+        String uniqueMember = UUID.randomUUID() + "|" + message;
+        redisTemplate.opsForZSet().add(danmuKey, uniqueMember, danmu.getVideoTime());
         // 设置过期时间，默认为7天
         redisTemplate.expire(danmuKey, Duration.ofDays(7));
     }
 
     private void broadcastMessage(String videoId, String message) {
+        // 弹幕房间通常只有几十到几百个Session，普通stream即可；
+        // parallelStream底层用全JVM共享的ForkJoinPool.commonPool，易造成线程池竞争
         videoSessions.getOrDefault(videoId, new CopyOnWriteArraySet<>())
-                    .parallelStream()
+                    .stream()
                     .filter(Session::isOpen)
                     .forEach(session -> {
                         session.getAsyncRemote().sendText(message);
@@ -85,15 +90,20 @@ public class DanmuEndpoint {
     @OnClose
     public void onClose(Session session) {
         String videoId = (String) session.getUserProperties().get("videoId");
-        videoSessions.get(videoId).remove(session);
-        log.info("视频 {} 观众退出，剩余在线: {}", videoId, 
-                videoSessions.get(videoId).size());
+        CopyOnWriteArraySet<Session> sessions = videoId == null ? null : videoSessions.get(videoId);
+        if (sessions != null) {
+            sessions.remove(session);
+            log.info("视频 {} 观众退出，剩余在线: {}", videoId, sessions.size());
+        }
     }
 
     @OnError
     public void onError(Session session, Throwable error) {
         String videoId = (String) session.getUserProperties().get("videoId");
         log.error("视频 {} 的WebSocket发生异常: {}", videoId, error.getMessage());
-        videoSessions.get(videoId).remove(session);
+        CopyOnWriteArraySet<Session> sessions = videoId == null ? null : videoSessions.get(videoId);
+        if (sessions != null) {
+            sessions.remove(session);
+        }
     }
 }

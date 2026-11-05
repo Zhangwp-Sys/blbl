@@ -10,6 +10,18 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 用户视频审核控制器
+ * 
+ * 功能说明：
+ * 1. 提供按状态查询视频列表
+ * 2. 支持修改视频审核状态
+ * 3. 支持删除审核视频
+ * 4. 支持重新上传视频
+ * 
+ * 请求路径：/videoPending
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

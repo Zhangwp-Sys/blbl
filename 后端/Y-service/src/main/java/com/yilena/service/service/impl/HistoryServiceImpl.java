@@ -26,16 +26,67 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * 历史记录服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现浏览历史记录相关的业务逻辑
+ * 2. 处理历史记录的添加、查询、删除
+ * 3. 实现历史记录开关功能
+ * 
+ * 核心功能：
+ * - 历史记录添加：记录用户浏览的视频
+ * - 历史记录查询：按日期分组查询历史记录
+ * - 历史记录管理：删除单条或全部历史记录
+ * - 开关功能：用户可控制是否记录浏览历史
+ * 
+ * 技术架构：
+ * - 使用RabbitMQ异步存储历史记录
+ * - 使用Map按日期分组存储历史记录
+ * - 按日期降序排列历史记录
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class HistoryServiceImpl implements HistoryService {
 
+    /**
+     * RabbitMQ消息模板
+     */
     private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 视频数据访问对象
+     */
     private final VideoMapper videoMapper;
+
+    /**
+     * 历史记录数据访问对象
+     */
     private final HistoryMapper historyMapper;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
 
+    /**
+     * 添加历史记录
+     * 
+     * 功能：记录用户浏览的视频
+     * 业务逻辑：
+     * 1. 检查用户是否开启历史记录功能
+     * 2. 查询视频信息
+     * 3. 通过RabbitMQ异步存储历史记录
+     * 
+     * @param userId 用户ID
+     * @param videoId 视频ID
+     */
     @Override
     public void addHistory(Long userId, Long videoId) {
         User user = userMapper.getUserById(userId);
@@ -51,6 +102,19 @@ public class HistoryServiceImpl implements HistoryService {
         }
     }
 
+    /**
+     * 获取历史记录
+     * 
+     * 功能：获取用户的历史浏览记录
+     * 业务逻辑：
+     * 1. 查询用户的历史记录
+     * 2. 获取视频详细信息
+     * 3. 按日期分组
+     * 4. 按日期降序排列
+     * 
+     * @param userId 用户ID
+     * @return 按日期分组的历史记录（日期 -> 历史记录DTO）
+     */
     @Override
     public Map<String, HistoryDTO> getHistory(Long userId) {
         Map<String, HistoryDTO> history =  historyMapper.getHistory(userId);
@@ -92,16 +156,38 @@ public class HistoryServiceImpl implements HistoryService {
         return history;
     }
 
+    /**
+     * 更新历史记录开关
+     * 
+     * 功能：更新用户历史记录记录开关状态
+     * 
+     * @param userId 用户ID
+     * @param isRecord 开关状态（0-关闭，1-开启）
+     */
     @Override
     public void updateIsRecord(Long userId, Integer isRecord) {
         userMapper.updateIsRecord(userId, isRecord);
     }
 
+    /**
+     * 删除全部历史记录
+     * 
+     * 功能：删除用户的全部历史记录
+     * 
+     * @param userId 用户ID
+     */
     @Override
     public void deleteAllHistory(Long userId) {
         historyMapper.deleteAllHistory(userId);
     }
 
+    /**
+     * 删除单条历史记录
+     * 
+     * 功能：删除指定的历史记录
+     * 
+     * @param id 历史记录ID
+     */
     @Override
     public void deleteHistory(Long id) {
         historyMapper.deleteHistory(id);

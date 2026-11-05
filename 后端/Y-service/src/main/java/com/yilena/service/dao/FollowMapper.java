@@ -7,6 +7,16 @@ import org.apache.ibatis.annotations.Mapper;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 关注关系数据访问接口
+ * 
+ * 功能说明：
+ * 1. 提供关注和取消关注功能
+ * 2. 支持更新特别关注
+ * 3. 支持获取关注和粉丝列表
+ * 4. 支持判断是否已关注
+ * 
+ */
 @Mapper
 public interface FollowMapper {
     void addFollow(UserFollowing userFollowing);

@@ -10,6 +10,17 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 观看历史控制器
+ * 
+ * 功能说明：
+ * 1. 提供观看历史的添加和查询
+ * 2. 支持更新观看记录设置
+ * 3. 支持删除全部或单条历史记录
+ * 
+ * 请求路径：/history
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

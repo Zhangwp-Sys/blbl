@@ -11,6 +11,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 热搜控制器
+ * 
+ * 功能说明：
+ * 1. 提供获取热搜前十功能
+ * 2. 支持添加搜索记录
+ * 
+ * 请求路径：/hotSearch
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -19,7 +29,7 @@ public class HotSearchController {
     private final HotSearchService hotSearchService;
 
     @GetMapping("/search/top")
-    @Cacheable(value = "hotSearch", key = "'top10'")
+    @Cacheable(value = "hotSearch", key = "'top10'", sync = true)
     public Result getTopHotSearch() {
         log.info("获取热搜前十");
         return Result.success(hotSearchService.getTopHotSearch());

@@ -7,6 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 动态数据传输对象
+ * 
+ * 功能说明：
+ * 1. 封装动态查询/操作请求参数
+ * 2. 包含动态基本信息和分页参数
+ * 
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

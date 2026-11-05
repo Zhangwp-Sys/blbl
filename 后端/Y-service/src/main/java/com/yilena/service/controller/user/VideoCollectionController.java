@@ -14,6 +14,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 视频合集控制器
+ * 
+ * 功能说明：
+ * 1. 提供视频合集的增删改查功能
+ * 2. 支持向合集添加/移除视频
+ * 3. 支持获取合集中的视频列表
+ * 
+ * 请求路径：/collection
+ * 
+ */
 @Slf4j
 @RequiredArgsConstructor
 @RestController

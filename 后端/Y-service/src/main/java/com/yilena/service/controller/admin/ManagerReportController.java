@@ -9,6 +9,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 管理员数据统计控制器
+ * 
+ * 功能说明：
+ * 1. 提供管理员数据统计报表功能
+ * 2. 支持获取视频状态统计
+ * 3. 支持获取用户、点赞、动态、评论、收藏总数
+ * 4. 支持获取视频上传、动态上传、用户注册趋势
+ * 
+ * 请求路径：/manager/report
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

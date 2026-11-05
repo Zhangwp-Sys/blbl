@@ -22,13 +22,51 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 动态待审核服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现动态审核相关的业务逻辑
+ * 2. 处理动态违规设为私密操作
+ * 3. 管理待审核动态的分页查询
+ * 
+ * 核心功能：
+ * - 审核操作：将违规动态设为私密
+ * - 分页查询：查询待审核动态列表
+ * - 消息通知：通过WebSocket发送审核结果通知
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class PostPendingServiceImpl implements PostPendingService {
+
+    /**
+     * 动态数据访问对象
+     */
     private final PostMapper postMapper;
+
+    /**
+     * WebSocket聊天端点
+     */
     private final ChatEndpoint chatEndpoint;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
 
+    /**
+     * 更新动态审核状态
+     * 
+     * 功能：将违规动态设为私密
+     * 业务逻辑：
+     * 1. 验证动态是否存在
+     * 2. 设置动态为私密状态
+     * 3. 发送私信通知用户
+     * 
+     * @param postPendingDTO 审核信息
+     * @throws RuntimeException 动态不存在时抛出异常
+     */
     @Transactional
     @Override
     public void updatePostPendingStatus(PostPendingDTO postPendingDTO) {
@@ -55,6 +93,19 @@ public class PostPendingServiceImpl implements PostPendingService {
         chatEndpoint.sendMessage(json);
     }
 
+    /**
+     * 分页查询待审核动态
+     * 
+     * 功能：分页查询违规动态列表
+     * 业务逻辑：
+     * 1. 设置分页参数
+     * 2. 查询动态列表
+     * 3. 解析标签和图片URL JSON数据
+     * 4. 返回分页结果
+     * 
+     * @param postPendingPageQueryDTO 分页查询条件
+     * @return 动态分页结果
+     */
     @Override
     public PageResult<PostVO> getPostPendingByPage(PostPendingPageQueryDTO postPendingPageQueryDTO) {
         PageHelper.startPage(postPendingPageQueryDTO.getPage(), postPendingPageQueryDTO.getPageSize());

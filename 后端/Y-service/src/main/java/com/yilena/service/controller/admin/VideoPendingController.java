@@ -13,6 +13,17 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 管理员视频审核控制器
+ * 
+ * 功能说明：
+ * 1. 提供管理员视频审核分页查询
+ * 2. 支持更新视频审核状态
+ * 3. 支持视频下架操作
+ * 
+ * 请求路径：/manager/pending
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

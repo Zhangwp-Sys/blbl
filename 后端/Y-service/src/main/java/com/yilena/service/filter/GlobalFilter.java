@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.io.IOException;
 
@@ -28,6 +29,7 @@ import java.io.IOException;
 public class GlobalFilter implements Filter {
 
     private final RabbitTemplate rabbitTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
@@ -69,6 +71,12 @@ public class GlobalFilter implements Filter {
         try {
             // 解析token，获取用户信息
             Claims claims =JwtUtils.parseToken(token);
+            // Token黑名单校验：已登出的token拒绝访问（先验签再查黑名单，伪造token不消耗Redis查询）
+            if (Boolean.TRUE.equals(redisTemplate.hasKey("token:blacklist:" + token))) {
+                log.info("token已登出（黑名单命中）");
+                response.setStatus(401);
+                return;
+            }
             Long id = Long.valueOf(claims.get("id").toString());
             // 将当前用户信息设置到ThreadLocal中
             CurrentHolder.setCurrent(id);

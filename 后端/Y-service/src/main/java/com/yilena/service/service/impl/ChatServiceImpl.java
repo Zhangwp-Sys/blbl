@@ -26,17 +26,76 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * 聊天服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现即时通讯相关的业务逻辑
+ * 2. 处理消息的发送、接收、删除、撤回
+ * 3. 实现离线消息存储和已读标记
+ * 4. 支持多种消息类型的查询
+ * 
+ * 核心功能：
+ * - 消息管理：发送、接收、删除、撤回消息
+ * - 离线消息：使用Redis存储离线消息
+ * - 已读标记：标记消息为已读
+ * - 消息查询：查询回复、@、点赞、系统等消息
+ * 
+ * 技术架构：
+ * - 使用WebSocket实现实时消息推送
+ * - 使用Redis存储离线消息
+ * - 使用RabbitMQ同步消息数据
+ * - 使用事务管理确保数据一致性
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
+    /**
+     * Redis模板对象
+     */
     private final RedisTemplate<String, Object> redisTemplate;
+
+    /**
+     * 聊天消息数据访问对象
+     */
     private final ChatMessageMapper chatMessageMapper;
+
+    /**
+     * 聊天WebSocket端点
+     */
     private final ChatEndpoint chatEndpoint;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 关注数据访问对象
+     */
     private final FollowMapper followMapper;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
 
+    /**
+     * 获取历史消息
+     * 
+     * 功能：获取两个用户之间的历史消息
+     * 业务逻辑：
+     * 1. 从数据库获取历史消息
+     * 2. 从Redis获取离线消息
+     * 3. 合并并去重消息
+     * 4. 过滤掉单方面删除的消息
+     * 
+     * @param currentUserId 当前用户ID
+     * @param targetUserId 目标用户ID
+     * @return 合并后的消息列表
+     */
     @Transactional
     public List<ChatMessage> getHistoryMessage(Long currentUserId, Long targetUserId) {
         // 1. 从数据库获取历史消息
@@ -55,6 +114,18 @@ public class ChatServiceImpl implements ChatService {
         return allMessages;
     }
 
+    /**
+     * 标记消息为已读
+     * 
+     * 功能：将消息标记为已读
+     * 业务逻辑：
+     * 1. 更新数据库中消息状态为已读
+     * 2. 通过WebSocket发送已读通知
+     * 3. 清理Redis中的离线消息
+     * 4. 更新离线消息过期状态
+     * 
+     * @param requestDTO 已读请求信息
+     */
     @Override
     public void markMessagesAsRead(ReadRequestDTO requestDTO) {
         // 更新所有消息状态为已读
@@ -87,6 +158,17 @@ public class ChatServiceImpl implements ChatService {
         });
     }
 
+    /**
+     * 发送消息
+     * 
+     * 功能：发送聊天消息
+     * 业务逻辑：
+     * 1. 设置消息默认值（状态、时间、可见性）
+     * 2. 生成唯一消息ID
+     * 3. 通过WebSocket发送消息
+     * 
+     * @param chatMessage 聊天消息
+     */
     @Transactional
     @Override
     public void sendMessage(ChatMessage chatMessage) {
@@ -102,6 +184,23 @@ public class ChatServiceImpl implements ChatService {
         chatEndpoint.sendMessage(json);
     }
 
+    /**
+     * 删除或撤回消息
+     * 
+     * 功能：删除或撤回聊天消息
+     * 业务逻辑：
+     * - 删除消息：设置消息对当前用户不可见
+     * - 撤回消息：
+     *   1. 验证是否为发送者
+     *   2. 验证是否在2分钟内
+     *   3. 从Redis中移除离线消息
+     *   4. 从数据库中删除消息
+     *   5. 发送撤回通知
+     * 
+     * @param messageId 消息ID
+     * @param type 操作类型（删除/撤回）
+     * @throws RuntimeException 撤回时间超过2分钟时抛出异常
+     */
     @Transactional
     @Override
     public void deleteMessage(Long messageId, Integer type) {
@@ -144,6 +243,18 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
+    /**
+     * 获取聊天用户列表
+     * 
+     * 功能：获取当前用户的聊天用户列表
+     * 业务逻辑：
+     * 1. 获取关注的用户列表
+     * 2. 统计每个用户的未读消息数（Redis + 数据库）
+     * 3. 返回用户列表
+     * 
+     * @param userId 用户ID
+     * @return 聊天用户列表
+     */
     @Override
     public List<UserVO> getUserList(Long userId) {
         List<UserVO> userVOS = followMapper.getFollowingUsers(userId);
@@ -163,6 +274,12 @@ public class ChatServiceImpl implements ChatService {
         return userVOS;
     }
 
+    /**
+     * 获取回复我的消息
+     * 
+     * @param userId 用户ID
+     * @return 回复消息列表
+     */
     @Override
     public List<MessageShowVO> getAnswerMe(Long userId) {
         List<MessageShowVO> messageShowVOS = chatMessageMapper.getAnswerMe(userId);
@@ -178,6 +295,12 @@ public class ChatServiceImpl implements ChatService {
         return messageShowVOS;
     }
 
+    /**
+     * 获取@我的消息
+     * 
+     * @param userId 用户ID
+     * @return @消息列表
+     */
     @Override
     public List<MessageShowVO> getAtMe(Long userId) {
         List<MessageShowVO> messageShowVOS = chatMessageMapper.getAtMe(userId);
@@ -193,6 +316,12 @@ public class ChatServiceImpl implements ChatService {
         return messageShowVOS;
     }
 
+    /**
+     * 获取点赞我的消息
+     * 
+     * @param userId 用户ID
+     * @return 点赞消息列表
+     */
     @Override
     public List<MessageShowVO> getLikeMe(Long userId) {
         List<MessageShowVO> messageShowVOS = chatMessageMapper.getLikeMe(userId);
@@ -208,12 +337,24 @@ public class ChatServiceImpl implements ChatService {
         return messageShowVOS;
     }
 
+    /**
+     * 获取系统消息
+     * 
+     * @param userId 用户ID
+     * @return 系统消息列表
+     */
     @Override
     public List<MessageShowVO> getSystemMessage(Long userId) {
         List<MessageShowVO> messageShowVOS = chatMessageMapper.getSystemMessage(userId);
         return messageShowVOS;
     }
 
+    /**
+     * 获取其他消息
+     * 
+     * @param userId 用户ID
+     * @return 其他消息列表
+     */
     @Override
     public List<MessageShowVO> getOtherMessage(Long userId) {
         List<MessageShowVO> messageShowVOS = chatMessageMapper.getOtherMessage(userId);
@@ -229,6 +370,21 @@ public class ChatServiceImpl implements ChatService {
         return messageShowVOS;
     }
 
+    /**
+     * 合并消息列表
+     * 
+     * 功能：合并数据库消息和Redis离线消息
+     * 业务逻辑：
+     * 1. 使用LinkedHashMap保持插入顺序
+     * 2. 数据库消息去重（按ID）
+     * 3. Redis离线消息去重
+     * 4. 过滤掉单方面删除的消息
+     * 5. 按时间降序排列
+     * 
+     * @param dbMessages 数据库消息列表
+     * @param redisMessages Redis离线消息列表
+     * @return 合并后的消息列表
+     */
     @Transactional
     public List<ChatMessage> mergeMessages(List<ChatMessage> dbMessages, List<Object> redisMessages){
         // 使用LinkedHashMap保持插入顺序

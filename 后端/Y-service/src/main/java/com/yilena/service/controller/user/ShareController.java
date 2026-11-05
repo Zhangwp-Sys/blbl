@@ -8,6 +8,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 分享控制器
+ * 
+ * 功能说明：
+ * 1. 提供查询是否已分享功能
+ * 2. 支持执行分享操作
+ * 
+ * 请求路径：/share
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

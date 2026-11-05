@@ -18,19 +18,85 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+/**
+ * 点赞服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现点赞相关的业务逻辑
+ * 2. 支持视频、动态、评论的点赞和取消点赞
+ * 3. 实现点赞统计更新
+ * 4. 发送点赞通知
+ * 
+ * 核心功能：
+ * - 点赞操作：支持视频、动态、评论的点赞
+ * - 取消点赞：支持视频、动态、评论的取消点赞
+ * - 统计更新：实时更新被点赞实体的点赞数
+ * - 通知功能：通过WebSocket发送点赞通知
+ * 
+ * 技术架构：
+ * - 使用WebSocket实现实时通知
+ * - 使用RabbitMQ同步动态数据到Elasticsearch
+ * - 使用事务管理确保数据一致性
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class LikeServiceImpl implements LikeService{
 
+    /**
+     * 视频数据访问对象
+     */
     private final VideoMapper videoMapper;
+
+    /**
+     * RabbitMQ消息模板
+     */
     private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 评论数据访问对象
+     */
     private final CommentMapper commentMapper;
+
+    /**
+     * 动态数据访问对象
+     */
     private final PostMapper postMapper;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 聊天WebSocket端点
+     */
     private final ChatEndpoint chatEndpoint;
+
+    /**
+     * 点赞数据访问对象
+     */
     private final LikeMapper likeMapper;
 
+    /**
+     * 点赞
+     * 
+     * 功能：对视频、动态或评论进行点赞
+     * 业务逻辑：
+     * 1. 设置当前用户ID
+     * 2. 根据实体类型更新对应实体的点赞数
+     * 3. 保存点赞记录到数据库
+     * 4. 发送点赞通知给被点赞者
+     * 
+     * @param like 点赞信息
+     * @return void
+     * @throws RuntimeException 当被点赞的视频、动态或评论不存在时抛出异常
+     */
     @Transactional
     @Override
     public void doLike(Like like) {
@@ -96,6 +162,20 @@ public class LikeServiceImpl implements LikeService{
         chatEndpoint.sendMessage(json);
     }
 
+    /**
+     * 取消点赞
+     * 
+     * 功能：取消对视频、动态或评论的点赞
+     * 业务逻辑：
+     * 1. 设置当前用户ID
+     * 2. 根据实体类型更新对应实体的点赞数（减1）
+     * 3. 验证点赞数不能为负数
+     * 4. 删除点赞记录
+     * 
+     * @param like 点赞信息
+     * @return void
+     * @throws RuntimeException 当实体不存在或点赞数已为0时抛出异常
+     */
     @Transactional
     @Override
     public void undoLike(Like like) {
@@ -139,6 +219,17 @@ public class LikeServiceImpl implements LikeService{
         likeMapper.undoLike(like);
     }
 
+    /**
+     * 检查是否已点赞
+     * 
+     * 功能：检查用户是否已点赞指定实体
+     * 业务逻辑：
+     * 1. 查询点赞记录
+     * 2. 返回点赞信息（null表示未点赞）
+     * 
+     * @param like 点赞查询信息
+     * @return 点赞信息（null表示未点赞）
+     */
     @Override
     public Like isLike(Like like) {
         Like oldLike =  likeMapper.isLike(like);

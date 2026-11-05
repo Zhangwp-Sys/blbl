@@ -21,7 +21,11 @@ spring:
       channel.size: 50
       channel.checkout-timeout: 1000
     # 消息确认机制
-    publisher-returns: true
+    publisher-confirm-type: correlated    # 生产者确认：消息是否到达交换机
+    publisher-returns: true               # 路由失败时返回给生产者
+    listener:
+      simple:
+        acknowledge-mode: manual          # 消费者手动ACK：处理成功才确认，失败重新入队
 
   # 配置MySQL数据库连接信息
   datasource:
@@ -42,7 +46,7 @@ spring:
       host: ${yilena.redis.host}
       port: ${yilena.redis.port}
       database: ${yilena.redis.database}
-      password: ${yilena.redis.password}
+#      password: ${yilena.redis.password}
 
 # 配置MyBatis日志输出
 mybatis:

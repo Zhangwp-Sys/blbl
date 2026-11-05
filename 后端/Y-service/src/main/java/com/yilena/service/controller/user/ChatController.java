@@ -8,6 +8,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 聊天消息控制器
+ * 
+ * 功能说明：
+ * 1. 提供聊天记录的获取和查询
+ * 2. 支持消息已读标记
+ * 3. 支持消息发送和删除
+ * 4. 支持获取回复我和@我数据
+ * 
+ * 请求路径：/message
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

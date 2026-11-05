@@ -27,17 +27,71 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 关注服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现用户关注相关的业务逻辑
+ * 2. 处理关注、取消关注、特别关注功能
+ * 3. 实现关注关系查询
+ * 4. 发送关注通知
+ * 
+ * 核心功能：
+ * - 关注管理：关注、取消关注、特别关注
+ * - 关注查询：分页查询关注列表、检查关注状态
+ * - 通知功能：通过WebSocket发送关注通知
+ * - 数据同步：使用RabbitMQ同步关注数据到Elasticsearch
+ * 
+ * 技术架构：
+ * - 使用WebSocket实现实时通知
+ * - 使用RabbitMQ异步同步关注数据
+ * - 使用事务管理确保数据一致性
+ * - 使用PageHelper实现分页查询
+ * 
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FollowServiceImpl implements FollowService {
 
+    /**
+     * 关注数据访问对象
+     */
     private final FollowMapper followMapper;
+
+    /**
+     * RabbitMQ消息模板
+     */
     private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 聊天WebSocket端点
+     */
     private final ChatEndpoint chatEndpoint;
 
+    /**
+     * 关注用户
+     * 
+     * 功能：关注指定用户
+     * 业务逻辑：
+     * 1. 验证不能关注自己
+     * 2. 普通关注：检查是否已关注，添加关注关系
+     * 3. 特别关注：检查是否已关注，设置特别关注标记
+     * 4. 发送关注通知给被关注者
+     * 
+     * @param followDTO 关注信息
+     * @throws RuntimeException 关注失败时抛出异常
+     */
     @Transactional
     @Override
     public void follow(FollowDTO followDTO) {
@@ -85,6 +139,18 @@ public class FollowServiceImpl implements FollowService {
         chatEndpoint.sendMessage(json);
     }
 
+    /**
+     * 取消关注
+     * 
+     * 功能：取消关注指定用户
+     * 业务逻辑：
+     * 1. 验证不能取消关注自己
+     * 2. 普通取消关注：检查是否已关注，删除关注关系
+     * 3. 取消特别关注：检查是否已关注，取消特别关注标记
+     * 
+     * @param followDTO 关注信息
+     * @throws RuntimeException 取消关注失败时抛出异常
+     */
     @Transactional
     @Override
     public void unfollow(FollowDTO followDTO) {
@@ -114,6 +180,18 @@ public class FollowServiceImpl implements FollowService {
         }
     }
 
+    /**
+     * 分页查询关注列表
+     * 
+     * 功能：分页查询用户的关注列表
+     * 业务逻辑：
+     * 1. 获取用户关注的用户ID列表
+     * 2. 根据用户名模糊查询
+     * 3. 分页返回用户信息
+     * 
+     * @param followPageDTO 分页查询条件
+     * @return 关注用户分页列表
+     */
     @Override
     public PageResult<UserVO> getFollowByPage(FollowPageDTO followPageDTO) {
         List<Long> followingIds = followMapper.getFollowingIds(followPageDTO.getId());
@@ -126,6 +204,18 @@ public class FollowServiceImpl implements FollowService {
         return new PageResult<>(p.getTotal(), p.getResult());
     }
 
+    /**
+     * 检查是否已关注
+     * 
+     * 功能：检查用户是否已关注指定作者
+     * 业务逻辑：
+     * 1. 查询关注关系
+     * 2. 返回关注信息（null表示未关注）
+     * 
+     * @param userId 用户ID
+     * @param authorId 作者ID
+     * @return 关注信息（null表示未关注）
+     */
     @Override
     public UserFollowing isFollow(Long userId, Long authorId) {
         return followMapper.isFollow(userId, authorId);

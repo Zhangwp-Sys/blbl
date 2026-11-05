@@ -1,5 +1,28 @@
 package com.yilena.service.constant;
 
+/**
+ * 视频分区常量类
+ * 
+ * 功能说明：
+ * 1. 定义视频分区/分类常量
+ * 2. 用于视频内容的分类和排序
+ * 
+ * 分区类型：
+ * - FAN = 1: 番剧
+ * - CARTOON = 2: 动画
+ * - GUICHU = 3: 鬼畜
+ * - DANCE = 4: 舞蹈
+ * - RECREATION = 5: 娱乐
+ * - FOOD = 6: 美食
+ * - CAR = 7: 汽车
+ * - SPORT = 8: 运动
+ * - MOVIE = 9: 电影
+ * - GAME = 10: 游戏
+ * - MUSIC = 11: 音乐
+ * - KNOWLEDGE = 12: 知识
+ * - FASHION = 13: 时尚
+ * 
+ */
 public class SortConstant {
     public static final Integer FAN = 1;
     public static final Integer CARTOON = 2;

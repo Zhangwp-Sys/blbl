@@ -9,6 +9,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 管理员动态审核控制器
+ * 
+ * 功能说明：
+ * 1. 提供管理员动态审核功能
+ * 2. 支持更新动态审核状态
+ * 3. 支持分页查询待审核动态列表
+ * 
+ * 请求路径：/manager/post
+ * 
+ */
 @Slf4j
 @RequiredArgsConstructor
 @RestController

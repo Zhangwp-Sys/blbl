@@ -9,6 +9,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 管理员日志控制器
+ * 
+ * 功能说明：
+ * 1. 提供日志分页查询功能
+ * 2. 支持区分用户日志和管理员日志
+ * 
+ * 请求路径：/manager/log
+ * 
+ */
 @Slf4j
 @RequiredArgsConstructor
 @RestController

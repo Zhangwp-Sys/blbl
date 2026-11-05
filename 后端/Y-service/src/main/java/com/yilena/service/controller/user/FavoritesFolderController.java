@@ -12,6 +12,17 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 收藏夹控制器
+ * 
+ * 功能说明：
+ * 1. 提供收藏夹的增删改查功能
+ * 2. 支持收藏视频和取消收藏视频
+ * 3. 支持获取收藏夹视频列表
+ * 
+ * 请求路径：/favorites
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

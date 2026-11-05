@@ -11,6 +11,17 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 动态控制器
+ * 
+ * 功能说明：
+ * 1. 提供动态的增删改查功能
+ * 2. 支持分页查询动态列表
+ * 3. 支持获取用户动态列表
+ * 
+ * 请求路径：/post
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

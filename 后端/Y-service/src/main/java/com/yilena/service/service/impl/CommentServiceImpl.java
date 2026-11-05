@@ -26,18 +26,83 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 评论服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现评论相关的业务逻辑
+ * 2. 处理视频评论、动态评论、回复评论
+ * 3. 实现评论通知功能
+ * 4. 支持评论查询和排序
+ * 
+ * 核心功能：
+ * - 评论发布：创建评论，过滤敏感词，更新统计
+ * - 评论查询：支持热门、最新、点赞数排序
+ * - 评论管理：更新、删除评论
+ * - 通知功能：通过WebSocket发送评论通知
+ * 
+ * 技术架构：
+ * - 使用WebSocket实现实时通知
+ * - 使用敏感词过滤工具保障内容安全
+ * - 使用事务管理确保数据一致性
+ * - 支持多种实体类型的评论
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
 
+    /**
+     * 评论数据访问对象
+     */
     private final CommentMapper commentMapper;
+
+    /**
+     * 视频数据访问对象
+     */
     private final VideoMapper videoMapper;
+
+    /**
+     * 动态数据访问对象
+     */
     private final PostMapper postMapper;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
+
+    /**
+     * RabbitMQ消息模板
+     */
     private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 聊天WebSocket端点
+     */
     private final ChatEndpoint chatEndpoint;
 
+    /**
+     * 添加评论
+     * 
+     * 功能：创建新的评论
+     * 业务逻辑：
+     * 1. 设置评论ID、用户ID、时间等基本信息
+     * 2. 过滤评论内容中的敏感词
+     * 3. 保存评论到数据库
+     * 4. 根据实体类型更新评论数
+     * 5. 发送评论通知给被评论者
+     * 6. 处理@用户的通知
+     * 
+     * @param comment 评论信息
+     * @return void
+     * @throws RuntimeException 当被评论的视频、动态、评论不存在或被@用户不存在时抛出异常
+     */
     @Transactional
     @Override
     public void addComment(Comment comment) {
@@ -161,6 +226,18 @@ public class CommentServiceImpl implements CommentService {
         }
     }
 
+    /**
+     * 获取评论列表
+     * 
+     * 功能：获取评论列表（支持热门、最新排序）
+     * 业务逻辑：
+     * 1. 根据排序类型查询评论列表
+     * 2. 填充用户信息（头像、用户名）
+     * 3. 返回评论列表
+     * 
+     * @param comment 评论查询条件
+     * @return 评论列表
+     */
     @Override
     public List<CommentVO> getCommentByList(Comment comment) {
         List<CommentVO>commentVOS = null;
@@ -181,6 +258,20 @@ public class CommentServiceImpl implements CommentService {
         return commentVOS;
     }
 
+    /**
+     * 更新评论
+     * 
+     * 功能：更新评论内容
+     * 业务逻辑：
+     * 1. 验证评论是否存在
+     * 2. 更新评论内容和图片
+     * 3. 设置更新时间
+     * 4. 保存到数据库
+     * 
+     * @param comment 评论更新信息
+     * @return void
+     * @throws RuntimeException 当评论不存在时抛出异常（COMMENT_NOT_EXIST）
+     */
     @Override
     public void updateComment(Comment comment) {
         Comment oldComment = commentMapper.getCommentById(comment.getId());
@@ -193,6 +284,19 @@ public class CommentServiceImpl implements CommentService {
         commentMapper.updateComment(oldComment);
     }
 
+    /**
+     * 删除评论
+     * 
+     * 功能：批量删除评论
+     * 业务逻辑：
+     * 1. 根据ID列表批量查询评论
+     * 2. 验证评论对应的视频是否存在，更新视频评论数（-1）
+     * 3. 批量删除评论
+     * 
+     * @param ids 评论ID列表
+     * @return void
+     * @throws RuntimeException 当评论对应的视频不存在时抛出异常（VIDEO_NOT_EXIST）
+     */
     @Transactional
     @Override
     public void deleteComment(List<Long> ids) {
@@ -209,6 +313,19 @@ public class CommentServiceImpl implements CommentService {
         commentMapper.deleteCommentByIds(ids);
     }
 
+    /**
+     * 查询评论
+     * 
+     * 功能：根据条件查询评论（支持多种排序）
+     * 业务逻辑：
+     * 1. 根据用户ID获取视频ID列表
+     * 2. 根据排序类型查询评论
+     * 3. 填充视频标题和用户信息
+     * 4. 返回评论列表
+     * 
+     * @param commentQueryDTO 查询条件
+     * @return 评论列表
+     */
     @Transactional
     @Override
     public List<Comment> getCommentQuery(CommentQueryDTO commentQueryDTO) {

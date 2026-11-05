@@ -8,10 +8,26 @@ import com.yilena.service.entity.po.Manager;
 import com.yilena.service.log.LogOperation;
 import com.yilena.service.service.ManagerService;
 import com.yilena.service.utils.CurrentHolder;
+import com.yilena.service.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 管理员控制器
+ * 
+ * 功能说明：
+ * 1. 提供管理员登录功能
+ * 2. 支持管理员信息的增删改查
+ * 3. 支持管理员密码修改
+ * 4. 支持分页查询管理员列表
+ * 
+ * 请求路径：/manager
+ * 
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 public class ManagerController {
 
     private final ManagerService managerService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @PostMapping("/login")
     public Result login(@RequestBody Manager manager) {
@@ -54,8 +71,13 @@ public class ManagerController {
     }
 
     @PostMapping("/logout")
-    public Result logout(){
+    public Result logout(@RequestHeader("token") String token){
         log.info("管理员{}退出登录", CurrentHolder.getCurrent());
+        // Token加入黑名单，TTL为剩余有效期
+        long remaining = JwtUtils.getRemainingMillis(token);
+        if (remaining > 0) {
+            redisTemplate.opsForValue().set("token:blacklist:" + token, "1", remaining, TimeUnit.MILLISECONDS);
+        }
         CurrentHolder.removeCurrent();
         return Result.success();
     }

@@ -8,6 +8,20 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * 统一API响应封装类
+ * 
+ * 功能说明：
+ * 1. 提供统一的API响应格式
+ * 2. 支持成功和失败两种响应状态
+ * 3. data字段为null时不在JSON中序列化
+ * 
+ * 响应格式：
+ * - code: 1=成功, 0=失败
+ * - msg: 响应消息
+ * - data: 响应数据
+ * 
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

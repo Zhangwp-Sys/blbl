@@ -14,6 +14,21 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 弹幕控制器
+ * 
+ * 功能说明：
+ * 1. 提供弹幕列表查询
+ * 2. 支持按时间范围查询弹幕
+ * 3. 支持查询弹幕数量
+ * 
+ * 技术特点：
+ * - 使用Redis有序集合存储弹幕
+ * - 基于时间戳进行范围查询
+ * 
+ * 请求路径：/danmu
+ * 
+ */
 @Slf4j
 @RequiredArgsConstructor
 @RestController
@@ -35,7 +50,12 @@ public class DanmuController {
                 danmuDTO.getPageSize()
         );
         return Result.success(danmus.stream()
-                .map(json -> JSON.parseObject(json, Danmu.class))
+                .map(json -> {
+                    // 新数据格式为 "UUID|弹幕JSON"（防止相同内容互相覆盖）；
+                    // 老数据为纯弹幕JSON（以"{"开头），原样解析，天然兼容
+                    String pureJson = json.startsWith("{") ? json : json.substring(json.indexOf('|') + 1);
+                    return JSON.parseObject(pureJson, Danmu.class);
+                })
                 .collect(Collectors.toList()));
     }
 

@@ -14,14 +14,48 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Elasticsearch配置类
+ * 
+ * 功能说明：
+ * 1. 管理Elasticsearch客户端连接
+ * 2. 初始化索引结构
+ * 3. 配置分词器和映射
+ * 
+ * 索引设计：
+ * - post: 帖子索引
+ * - user: 用户索引
+ * - video: 视频索引
+ * 
+ * 分词器：
+ * - ik_max_word: 最大化分词，提高搜索召回率
+ * - ik_smart: 智能分词，提高搜索精确度
+ * 
+ * 使用场景：
+ * - 全文搜索功能
+ * - 数据分析和聚合
+ * - 日志存储和查询
+ * 
+ * @author Yilena
+ * @since 2024-01-01
+ * @version 1.0.0
+ */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class ElasticsearchConfig {
 
+    /**
+     * Elasticsearch高级REST客户端
+     */
     private final RestHighLevelClient client;
 
-    //根据spring生命周期进行销毁
+    /**
+     * 销毁Elasticsearch连接
+     * 
+     * 功能：在应用程序关闭时释放Elasticsearch连接资源
+     * 执行时机：Spring容器销毁Bean时自动执行
+     */
     @PreDestroy
     public void destroy() {
         try {
@@ -34,6 +68,16 @@ public class ElasticsearchConfig {
         }
     }
 
+    /**
+     * 初始化Elasticsearch索引
+     * 
+     * 功能：在应用程序启动时创建必要的索引
+     * 业务逻辑：
+     * 1. 创建帖子索引
+     * 2. 创建用户索引
+     * 3. 创建视频索引
+     * 4. 配置分词器和字段映射
+     */
     @PostConstruct // 在 Bean 初始化后执行
     public void initIndices() {
         //post 索引

@@ -6,6 +6,17 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 
+/**
+ * 聊天消息数据访问接口
+ * 
+ * 功能说明：
+ * 1. 提供私信消息的增删改查
+ * 2. 支持根据双方用户ID获取聊天记录
+ * 3. 支持标记消息已读
+ * 4. 支持获取"回复我"、"赞我"、系统消息等
+ * 5. 支持删除半年前的过期消息
+ * 
+ */
 @Mapper
 public interface ChatMessageMapper {
     void addMessage(ChatMessage message);

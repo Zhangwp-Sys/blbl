@@ -28,18 +28,85 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 动态服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现动态（帖子）相关的业务逻辑
+ * 2. 处理动态的创建、查询、更新、删除
+ * 3. 集成Elasticsearch进行搜索
+ * 4. 实现动态与视频的关联
+ * 
+ * 核心功能：
+ * - 动态发布：创建文字或视频动态，过滤敏感词
+ * - 动态查询：分页查询、用户动态查询、关注动态查询
+ * - 动态管理：更新、删除动态
+ * - 数据统计：更新用户动态数量
+ * 
+ * 技术架构：
+ * - 使用RabbitMQ异步同步动态数据到Elasticsearch
+ * - 使用敏感词过滤工具保障内容安全
+ * - 使用雪花算法生成唯一ID
+ * - 使用事务管理确保数据一致性
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
 
+    /**
+     * 动态数据访问对象
+     */
     private final PostMapper postMapper;
+
+    /**
+     * RabbitMQ消息模板
+     */
     private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 动态Elasticsearch操作类
+     */
     private final PostES postES;
+
+    /**
+     * 视频数据访问对象
+     */
     private final VideoMapper videoMapper;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 关注数据访问对象
+     */
     private final FollowMapper followMapper;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
 
+    /**
+     * 添加动态
+     * 
+     * 功能：创建新的动态（帖子）
+     * 业务逻辑：
+     * 1. 初始化动态统计数据（点击、点赞、收藏等）
+     * 2. 设置创建和更新时间
+     * 3. 生成唯一动态ID
+     * 4. 过滤标题和内容中的敏感词
+     * 5. 设置动态可见性为公开
+     * 6. 将图片和标签列表转换为JSON格式
+     * 7. 判断动态类型（文字或视频）
+     * 8. 更新用户动态数量
+     * 9. 保存动态到数据库
+     * 10. 异步同步到Elasticsearch
+     * 
+     * @param post 动态信息
+     */
     @Transactional
     @Override
     public void addPost(Post post) {
@@ -95,11 +162,36 @@ public class PostServiceImpl implements PostService {
         rabbitTemplate.convertAndSend(MqConstant.CRUD_EXCHANGE, MqConstant.POST_BINDING_KEY, postVO);
     }
 
+    /**
+     * 分页查询动态
+     * 
+     * 功能：分页查询动态列表
+     * 业务逻辑：
+     * 1. 使用Elasticsearch进行搜索
+     * 2. 支持分页功能
+     * 3. 返回分页结果
+     * 
+     * @param postDTO 动态查询条件
+     * @return 分页查询结果
+     */
     @Override
     public PageResult<PostVO> getPostByPage(PostDTO postDTO) {
         return postES.getPostByPage(postDTO);
     }
 
+    /**
+     * 根据ID查询动态
+     * 
+     * 功能：根据动态ID查询动态详细信息
+     * 业务逻辑：
+     * 1. 查询动态信息
+     * 2. 解析图片URL JSON数据
+     * 3. 解析标签JSON数据
+     * 4. 返回动态实体对象
+     * 
+     * @param id 动态ID
+     * @return 动态实体对象
+     */
     @Transactional
     @Override
     public Post getPostById(Long id) {
@@ -133,6 +225,18 @@ public class PostServiceImpl implements PostService {
         return p;
     }
 
+    /**
+     * 更新动态
+     * 
+     * 功能：更新动态信息
+     * 业务逻辑：
+     * 1. 设置更新时间
+     * 2. 将图片和标签列表转换为JSON格式
+     * 3. 更新动态信息到数据库
+     * 4. 异步同步更新到Elasticsearch
+     * 
+     * @param post 动态更新信息
+     */
     @Override
     public void updatePost(Post post) {
         post.setUpdatedTime(LocalDateTime.now());
@@ -148,6 +252,17 @@ public class PostServiceImpl implements PostService {
         rabbitTemplate.convertAndSend(MqConstant.CRUD_EXCHANGE, MqConstant.POST_BINDING_KEY, postVO);
     }
 
+    /**
+     * 删除动态
+     * 
+     * 功能：删除指定动态
+     * 业务逻辑：
+     * 1. 删除动态记录
+     * 2. 更新用户动态数量
+     * 3. 异步同步删除操作到Elasticsearch
+     * 
+     * @param id 动态ID
+     */
     @Override
     public void deletePost(Long id) {
         postMapper.deletePost(id);
@@ -166,6 +281,21 @@ public class PostServiceImpl implements PostService {
         rabbitTemplate.convertAndSend(MqConstant.CRUD_EXCHANGE, MqConstant.POST_BINDING_KEY, postVO);
     }
 
+    /**
+     * 获取关注用户的动态
+     * 
+     * 功能：获取当前用户关注用户的动态列表
+     * 业务逻辑：
+     * 1. 获取用户关注列表
+     * 2. 添加用户自己到列表
+     * 3. 查询这些用户的动态
+     * 4. 解析图片和标签JSON数据
+     * 5. 填充视频相关信息
+     * 6. 返回动态列表
+     * 
+     * @param userId 用户ID
+     * @return 动态列表
+     */
     @Override
     public List<PostVO> getPostByFollowing(Long userId) {
         List<Long> followingIds = followMapper.getFollowingIds(userId);
@@ -200,6 +330,19 @@ public class PostServiceImpl implements PostService {
         return postVOS;
     }
 
+    /**
+     * 获取我的动态
+     * 
+     * 功能：获取当前用户的动态列表
+     * 业务逻辑：
+     * 1. 获取当前用户ID
+     * 2. 查询用户动态列表
+     * 3. 解析图片和标签JSON数据
+     * 4. 填充视频相关信息
+     * 5. 返回动态列表
+     * 
+     * @return 动态列表
+     */
     @Override
     public List<PostVO> getMyPosts() {
         Long userId = CurrentHolder.getCurrent();
@@ -232,6 +375,19 @@ public class PostServiceImpl implements PostService {
         return postVOS;
     }
 
+    /**
+     * 根据用户ID获取动态
+     * 
+     * 功能：获取指定用户的动态列表
+     * 业务逻辑：
+     * 1. 根据用户ID查询动态列表
+     * 2. 解析图片和标签JSON数据
+     * 3. 填充视频相关信息
+     * 4. 返回动态列表
+     * 
+     * @param userId 用户ID
+     * @return 动态列表
+     */
     @Override
     public List<PostVO> getPostByUserId(Long userId) {
         List<PostVO> postVOS  = postMapper.getPostByUserId(userId);

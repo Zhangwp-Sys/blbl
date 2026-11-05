@@ -27,19 +27,82 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 视频待审核服务实现类
+ * 
+ * 功能说明：
+ * 1. 实现视频审核相关的业务逻辑
+ * 2. 处理视频审核通过/拒绝操作
+ * 3. 管理待审核视频的生命周期
+ * 
+ * 核心功能：
+ * - 分页查询：查询待审核/已审核视频列表
+ * - 审核操作：审核通过/拒绝视频
+ * - 视频发布：审核通过后发布到视频表
+ * - 消息通知：通过WebSocket发送审核结果通知
+ * 
+ * 技术特点：
+ * - 使用RabbitMQ异步更新ES索引和视频合集
+ * - 使用WebSocket实时推送审核结果
+ * - 事务管理确保数据一致性
+ * 
+ */
 @Service
 @RequiredArgsConstructor
 public class VideoPendingServiceImpl implements VideoPendingService{
 
+    /**
+     * 待审核视频数据访问对象
+     */
     private final VideoPendingMapper videoPendingMapper;
+
+    /**
+     * RabbitMQ消息模板
+     */
     private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 视频数据访问对象
+     */
     private final VideoMapper videoMapper;
+
+    /**
+     * WebSocket聊天端点
+     */
     private final ChatEndpoint chatEndpoint;
+
+    /**
+     * 雪花算法ID生成器
+     */
     private final SnowFlake snowFlake;
+
+    /**
+     * 视频合集数据访问对象
+     */
     private final VideoCollectionMapper videoCollectionMapper;
+
+    /**
+     * 用户数据访问对象
+     */
     private final UserMapper userMapper;
+
+    /**
+     * 关注数据访问对象
+     */
     private final FollowMapper followMapper;
 
+    /**
+     * 分页查询待审核视频
+     * 
+     * 功能：分页查询待审核或已审核的视频列表
+     * 业务逻辑：
+     * 1. 根据状态选择查询待审核或已审核视频
+     * 2. 解析标签JSON数据
+     * 3. 返回分页结果
+     * 
+     * @param videoPendingDTO 查询条件
+     * @return 视频分页结果
+     */
     @Override
     public PageResult<VideoPending> getVideoPendingByPage(VideoPendingDTO videoPendingDTO) {
         PageHelper.startPage(videoPendingDTO.getPage(),videoPendingDTO.getPageSize());
@@ -58,6 +121,12 @@ public class VideoPendingServiceImpl implements VideoPendingService{
         return new PageResult<>(p.getTotal(),p.getResult());
     }
 
+    /**
+     * 根据ID获取待审核视频详情
+     * 
+     * @param id 视频ID
+     * @return 视频详情
+     */
     @Override
     public VideoPending getVideoPendingById(Long id) {
         VideoPending videoPending = videoPendingMapper.getVideoPendingById(id);
@@ -70,6 +139,25 @@ public class VideoPendingServiceImpl implements VideoPendingService{
         return videoPending;
     }
 
+    /**
+     * 更新视频审核状态
+     * 
+     * 功能：审核视频并处理审核结果
+     * 业务逻辑：
+     * 1. 查询待审核视频
+     * 2. 更新审核状态
+     * 3. 如果审核通过：
+     *    - 添加到视频表
+     *    - 更新用户视频计数
+     *    - 发送MQ消息更新ES索引
+     *    - 发送MQ消息添加到视频合集
+     *    - 通过WebSocket通知关注者
+     * 4. 如果审核拒绝：
+     *    - 发送私信通知用户
+     * 
+     * @param videoPendingStatusDTO 审核状态更新信息
+     * @throws RuntimeException 视频不存在时抛出异常
+     */
     @Transactional
     @Override
     public void updateVideoPendingStatus(VideoPendingStatusDTO videoPendingStatusDTO) {
@@ -147,6 +235,19 @@ public class VideoPendingServiceImpl implements VideoPendingService{
         }
     }
 
+    /**
+     * 视频下架迁移到审核表
+     * 
+     * 功能：将已发布的视频下架并迁移到审核表
+     * 业务逻辑：
+     * 1. 查询视频信息
+     * 2. 迁移到审核表（设置状态为待审核）
+     * 3. 删除原视频记录
+     * 4. 发送私信通知用户
+     * 
+     * @param videoPendingStatusDTO 视频下架信息
+     * @throws RuntimeException 视频不存在时抛出异常
+     */
     @Transactional
     @Override
     public void updateVideoPendingFromVideo(VideoPendingStatusDTO videoPendingStatusDTO) {
@@ -178,6 +279,13 @@ public class VideoPendingServiceImpl implements VideoPendingService{
         chatEndpoint.sendMessage(json);
     }
 
+    /**
+     * 根据用户ID和状态获取视频列表
+     * 
+     * @param userId 用户ID
+     * @param status 视频状态
+     * @return 视频列表
+     */
     @Override
     public List<VideoPending> getVideoPendingByStatus(Long userId, Integer status) {
         if(!Objects.equals(status, StatusConstant.STATUS_YES)) {
@@ -187,6 +295,13 @@ public class VideoPendingServiceImpl implements VideoPendingService{
         }
     }
 
+    /**
+     * 更新待审核视频信息
+     * 
+     * 功能：更新视频信息，如果视频URL变更则重新计算时长
+     * 
+     * @param videoPending 视频更新信息
+     */
     @Override
     public void updateVideoPending(VideoPending videoPending) {
         if(videoPending.getVideoUrl() != null){
@@ -197,11 +312,23 @@ public class VideoPendingServiceImpl implements VideoPendingService{
         videoPendingMapper.updateVideoPending(videoPending);
     }
 
+    /**
+     * 删除待审核视频
+     * 
+     * @param id 视频ID
+     */
     @Override
     public void deleteVideoPending(Long id) {
         videoPendingMapper.deleteVideoPending(id);
     }
 
+    /**
+     * 重新上传视频
+     * 
+     * 功能：将视频状态重置为待审核
+     * 
+     * @param id 视频ID
+     */
     @Override
     public void reuploadVideoPending(Long id) {
         VideoPending videoPending = videoPendingMapper.getVideoPendingById(id);

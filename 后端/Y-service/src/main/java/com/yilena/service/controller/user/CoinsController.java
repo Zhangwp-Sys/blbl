@@ -9,6 +9,17 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 视频投币控制器
+ * 
+ * 功能说明：
+ * 1. 提供视频投币功能
+ * 2. 支持查询投币视频列表
+ * 3. 支持查询是否投币
+ * 
+ * 请求路径：/coins
+ * 
+ */
 @Slf4j
 @RequiredArgsConstructor
 @RestController

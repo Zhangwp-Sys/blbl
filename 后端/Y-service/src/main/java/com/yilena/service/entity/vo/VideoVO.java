@@ -14,6 +14,27 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * 视频视图对象
+ * 
+ * 功能说明：
+ * 1. 封装视频完整信息返回给前端
+ * 2. 包含视频基本信息、统计数据和用户信息
+ * 
+ * 字段说明：
+ * - id: 视频ID
+ * - title: 视频标题
+ * - description: 视频描述
+ * - coverUrl: 封面URL
+ * - tags: 视频标签列表
+ * - views: 浏览量
+ * - barrages: 弹幕数
+ * - favorites: 收藏数
+ * - userId: 用户ID
+ * - username: 用户名
+ * - createdTime: 创建时间
+ * 
+ */
 @Data
 @Builder
 @NoArgsConstructor

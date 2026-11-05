@@ -56,3 +56,18 @@ __pycache__/
 
 # Vue/Node
 *.local
+
+# 个人笔记与求职资料（不推送到远程）
+八股精简.md
+场景题.md
+速记.md
+项目经验理解*.md
+改造方案*.md
+提示词
+
+# 本地启动准备（含 redis-server.exe、dump.rdb 等二进制与数据快照）
+启动准备/
+
+# 本地辅助脚本
+acceptance-check.ps1
+start-es.bat
